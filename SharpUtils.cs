@@ -8,9 +8,18 @@ using Newtonsoft.Json;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Drawing;
 
 namespace SharpUpdater {
     internal static class SharpUtils {
+
+        private static void TextBoxLog(RichTextBox box, string s, Color? c = null) {
+            box.SelectionStart = box.TextLength;
+            box.SelectionLength = 0;
+            box.SelectionColor = c ?? box.ForeColor;
+            box.AppendText((box.Lines.Count() == 0 ? "" : Environment.NewLine) + DateTime.Now + "\t" + s);
+            box.SelectionColor = box.ForeColor;
+        }
 
         public static string SimpleRelativePath(string relativeTo, string path) {
             return Path.GetFullPath(path).Substring(Path.GetFullPath(relativeTo).Length + 1);
@@ -19,6 +28,13 @@ namespace SharpUpdater {
         public static void CheckOrCreateDirectory(string path) {
             if (!Directory.Exists(path)) {
                 Directory.CreateDirectory(path);
+            }
+        }
+
+        public static bool ZipFileContains(string zipSource, string fileName) {
+            var zipPath = Path.GetFullPath(zipSource);
+            using (ZipArchive archive = ZipFile.OpenRead(zipPath)) {
+                return archive.Entries.Any(it => it.FullName.EndsWith(fileName));
             }
         }
 
@@ -154,6 +170,11 @@ namespace SharpUpdater {
             }
         }
 
+        // sample SharpUpdater.json
+        //{
+        //    "name": "CarrotNotifier",
+        //    "url": "https://gitee.com/osap/GenshinNotifier/raw/master/version.json"
+        //}
         public static (string program, string url) ReadConfig(string filename = "SharpUpdater.json") {
             var filepath = Path.Combine(Application.StartupPath, filename);
             if (!File.Exists(filepath)) {
@@ -162,10 +183,10 @@ namespace SharpUpdater {
             try {
                 var content = File.ReadAllText(filepath, Encoding.UTF8);
                 dynamic o = JsonConvert.DeserializeObject(content);
-                var p = (string)o.program;
+                var n = (string)o.name;
                 var u = (string)o.url;
-                Console.WriteLine($"ReadConfig program={p} url={u}");
-                return (p, u);
+                Console.WriteLine($"ReadConfig file={filename} name={n} url={u}");
+                return (n, u);
             } catch (Exception ex) {
                 Console.WriteLine($"ReadConfig error={ex}");
                 return default;
@@ -176,7 +197,7 @@ namespace SharpUpdater {
             var filepath = Path.Combine(Application.StartupPath, filename);
             try {
                 var obj = new {
-                    program = p,
+                    name = p,
                     url = u
                 };
                 var content = JsonConvert.SerializeObject(obj);

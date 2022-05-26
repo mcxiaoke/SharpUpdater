@@ -47,7 +47,7 @@ namespace SharpUpdater {
         public string DownloadUrl { get; set; }
 
         public override string ToString() {
-            return JsonConvert.ToString(this);
+            return JsonConvert.SerializeObject(this);
         }
 
         public static bool DataInValid(VersionInfo info) =>

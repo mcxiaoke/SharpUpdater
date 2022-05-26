@@ -60,7 +60,7 @@
             this.BigTextBox.TabIndex = 2;
             this.BigTextBox.TabStop = false;
             this.BigTextBox.Text = "";
-            this.BigTextBox.LinkClicked += new System.Windows.Forms.LinkClickedEventHandler(this.InfoTextBox_LinkClicked);
+            this.BigTextBox.LinkClicked += new System.Windows.Forms.LinkClickedEventHandler(this.BigTextBox_LinkClicked);
             // 
             // AProgressBar
             // 

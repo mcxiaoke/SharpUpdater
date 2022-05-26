@@ -8,6 +8,7 @@ using System.Text;
 using System.Net;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows;
 using Newtonsoft.Json;
 using System.IO;
 using System.Diagnostics;
@@ -24,32 +25,41 @@ namespace SharpUpdater {
         ERROR
     }
 
-
     public partial class UpdateDialog : Form {
-        private readonly string UpdateVersionUrl;
+        private string CmdName;
+        private string CmdURL;
         private VersionInfo UpdateVersionInfo;
         private UpdateStatus CurrentUpdateStatus = UpdateStatus.NONE;
 
-        public UpdateDialog(string[] args) {
+        public UpdateDialog(CommandOptions options) {
             InitializeComponent();
-            if (args != null && args.Length >= 1) {
-                string url = args[0];
-                try {
-                    UpdateVersionUrl = new Uri(url).ToString();
-                } catch (Exception) {
-                    UpdateVersionUrl = null;
-                }
-            } else {
-                var (_, url) = SharpUtils.ReadConfig();
-                UpdateVersionUrl = url;
+            ParseOptions(options);
+        }
+
+        private void ParseOptions(CommandOptions options) {
+            var (name, url) = (options.Name, options.URL);
+            Console.WriteLine($"UpdateDialog option={name} {url}");
+            if (name == null && url == null && !string.IsNullOrWhiteSpace(options.ConfigFile)) {
+                (name, url) = SharpUtils.ReadConfig(options.ConfigFile);
+                Console.WriteLine($"UpdateDialog config={name} {url}");
             }
+            if (name == null && url == null) {
+                (name, url) = SharpUtils.ReadConfig();
+                Console.WriteLine($"UpdateDialog default={name} {url}");
+            }
+            CmdName = name;
+            CmdURL = url;
+            Console.WriteLine($"UpdateDialog final={CmdName} {CmdURL}");
         }
 
         private async void UpdateDialog_Load(object sender, EventArgs e) {
-            if (string.IsNullOrWhiteSpace(UpdateVersionUrl)) {
+            if (string.IsNullOrWhiteSpace(CmdURL)) {
                 SetFatalStatusInfo("启动参数错误：" +
-                    $"\n\n命令行参数：\n{Application.ProductName} program-name version-url" +
-                    "\n\n使用配置文件: \nSharpUpdater.json file in current directory.");
+                    $"\n\n使用命令行参数：" +
+                    $"\n-u/--url version-info-url" +
+                    "\n-n/--name application-name"+
+                    "\n-c/--config local-config-file"+
+                    "\n\n使用配置文件: \nSharpUpdater.json file in application directory.");
             } else {
                 await CheckUpdate();
             }
@@ -60,7 +70,11 @@ namespace SharpUpdater {
         }
 
         private void UpdateDialog_Shown(object sender, EventArgs e) {
-
+            if (!string.IsNullOrWhiteSpace(CmdName)) {
+                this.Text = $"{CmdName} 更新工具";
+            } else {
+                this.Text = $"{Application.ProductName} {Application.ProductVersion}";
+            }
         }
 
 
@@ -95,74 +109,65 @@ namespace SharpUpdater {
             }));
         }
 
-        private async Task CheckUpdate() {
+        private void SetVersionInfoTextBox(string localVer, VersionInfo info) {
+            var infoStr = "";
+            infoStr += $"★ 应用名称：{info.Name}\n";
+            infoStr += $"★ 应用版本：{localVer} => {info.Version}\n";
+            infoStr += $"★ 文件大小：{SharpUtils.FormatFileSize(info.DownloadSize)}\n";
+            infoStr += $"★ 发布时间：{info.CreatedAt}\n";
+            infoStr += $"★ 项目地址：{info.ProjectUrl}\n";
+            infoStr += $"★ 更新说明：{info.Changelog}";
+            BigTextBox.Text = infoStr;
+            BigTextBox.Font = new System.Drawing.Font(BigTextBox.Font.Name, 9F);
+            BigTextBox.ForeColor = Control.DefaultForeColor;
+        }
+
+        private async Task CheckUpdate(string versionUrl = null) {
             BigTextBox.Text = string.Empty;
             using (var client = new WebClient()) {
-                var url = UpdateVersionUrl;
-                Console.WriteLine($"CheckUpdate {DateTime.Now} url={url} ");
+                var url = versionUrl ?? CmdURL;
+                Console.WriteLine($"CheckUpdate url={url} ");
                 try {
                     var text = await client.DownloadStringTaskAsync(new Uri(url));
                     var info = JsonConvert.DeserializeObject<VersionInfo>(text);
-#if DEBUG
-                    var debugVersionFile = Path.Combine(Application.StartupPath, "debug-version.json");
-                    info = JsonConvert.DeserializeObject<VersionInfo>(
-                        File.ReadAllText(debugVersionFile, Encoding.UTF8));
-#endif
                     if (VersionInfo.DataInValid(info)) {
                         SetRetryStatusInfo($"配置错误：配置无效或缺少必须字段！\n\n{text}");
                         return;
                     }
                     UpdateVersionInfo = info;
-                    Console.WriteLine($"CheckUpdate {DateTime.Now} {info?.Version}");
+                    Console.WriteLine($"CheckUpdate info={info}");
                     var exePath = Path.Combine(Application.StartupPath, info.Program);
                     if (!File.Exists(exePath)) {
-                        SetRetryStatusInfo($"系统错误：本地可执行文件不存在！\n\n" +
+                        SetRetryStatusInfo($"文件错误：可执行文件 [{info.Program}] 不存在！\n\n" +
                         $"当前目录 {Application.StartupPath} 未找到文件名为 {info.Program} 的可执行文件，" +
                         $"如果你曾经给文件更名，请改回 {info.Program} 后重试");
                         return;
                     }
+                    Console.WriteLine($"CheckUpdate exePath={exePath}");
                     var localFile = ReadFileVersion(exePath);
-                    SharpUtils.WriteConfig(localFile.InternalName, url);
+                    SharpUtils.WriteConfig(localFile.ProductName, url);
                     var localVer = SemVersion.Parse(localFile.ProductVersion, SemVersionStyles.Any);
                     var remoteVer = SemVersion.Parse(info.Version, SemVersionStyles.Any);
                     bool shouldUpdate = localVer < remoteVer;
-                    var titleStr = shouldUpdate ? $"{localFile.ProductName} 发现新版本！" :
+                    var titleStr = shouldUpdate ? $"{localFile.ProductName ?? info.Name} 发现新版本！" :
                         $"{localFile.ProductName} 当前已经是最新版！";
-                    var infoStr = "";
-                    infoStr += $"★ 应用名称：{info.Name}\n";
-                    infoStr += $"★ 应用版本：{localVer} => {remoteVer}\n";
-                    infoStr += $"★ 文件大小：{SharpUtils.FormatFileSize(info.DownloadSize)}\n";
-                    infoStr += $"★ 发布时间：{info.CreatedAt}\n";
-                    infoStr += $"★ 项目地址：{info.ProjectUrl}\n";
-                    infoStr += $"★ 更新说明：{info.Changelog}";
 
                     Console.WriteLine($"CheckUpdate end {DateTime.Now}");
                     CurrentUpdateStatus = UpdateStatus.READY;
                     Invoke(new Action(() => {
                         this.Text = titleStr;
-                        BigTextBox.Font = new System.Drawing.Font(BigTextBox.Font.Name, 9F);
-                        BigTextBox.ForeColor = Control.DefaultForeColor;
-                        BigTextBox.Text = infoStr;
+                        SetVersionInfoTextBox(localVer.ToString(), info);
                         BigButton.Enabled = shouldUpdate;
                         BigButton.Text = shouldUpdate ? "开始更新" : "不需要更新";
                     }));
-                } catch (JsonException ex) {
-                    Console.WriteLine($"CheckUpdate failed error={ex.Message}");
-                    SetRetryStatusInfo($"解析错误：{ex.Message}\n\n{url}\n{ex}");
-                } catch (FormatException ex) {
-                    Console.WriteLine($"CheckUpdate failed error={ex.Message}");
-                    SetRetryStatusInfo($"数据错误：{ex.Message}\n\n{url}\n{ex}");
-                } catch (WebException ex) {
-                    Console.WriteLine($"CheckUpdate failed error={ex.Message}");
-                    SetRetryStatusInfo($"网络错误：{ex.Message}\n\n{url}\n{ex}");
                 } catch (Exception ex) {
                     Console.WriteLine($"CheckUpdate failed error={ex.Message}");
-                    SetRetryStatusInfo($"未知错误：{ex.Message}\n\n{url}\n{ex}");
+                    SetRetryStatusInfo($"遇到错误：{ex.Message}\n\n{url}\n{ex}");
                 }
             }
         }
 
-        private void InfoTextBox_LinkClicked(object sender, LinkClickedEventArgs e) {
+        private void BigTextBox_LinkClicked(object sender, LinkClickedEventArgs e) {
             Console.WriteLine($"InfoTextBox_LinkClicked {e.LinkText}");
             Process.Start(e.LinkText);
         }
@@ -217,17 +222,22 @@ namespace SharpUpdater {
 
         }
 
-        private async Task<Exception> InstallUpdate(VersionInfo info, string filepath) {
+        private async Task<Exception> InstallUpdateAsync(VersionInfo info, string filepath) {
             // Normalizes the path.
+            var program = info.Program;
             var zipPath = Path.GetFullPath(filepath);
             var destPath = Path.GetFullPath(Application.StartupPath);
-            Console.WriteLine($"InstallUpdate file={filepath}");
+            Console.WriteLine($"InstallUpdateAsync file={filepath}");
             return await Task.Run(() => {
                 try {
+                    var hasProgram = SharpUtils.ZipFileContains(zipPath, program);
+                    if (!hasProgram) {
+                        throw new NullReferenceException($"升级包损坏或错误：可执行文件 [{program}] 不存在");
+                    }
                     SharpUtils.UnzipFile(zipPath, destPath, true, true, "Release/");
                     return null;
                 } catch (Exception ex) {
-                    Console.WriteLine($"InstallUpdate error={ex.Message}");
+                    Console.WriteLine($"InstallUpdateAsync error={ex.Message}");
                     return ex;
                 }
             });
@@ -267,7 +277,7 @@ namespace SharpUpdater {
                 CurrentUpdateStatus = UpdateStatus.READY;
                 BigButton.Enabled = true;
                 BigButton.Text = "下载失败，点击重试";
-                MessageBox.Show($"{dError}", $"更新包下载失败 {dError.GetType()}", MessageBoxButtons.OK);
+                MessageBox.Show($"网址：{UpdateVersionInfo.DownloadUrl}\n\n{dError}", $"更新包下载失败 {dError.GetType()}", MessageBoxButtons.OK);
                 return;
             }
             BigButton.Text = "正在安装...";
@@ -276,15 +286,15 @@ namespace SharpUpdater {
                 CurrentUpdateStatus = UpdateStatus.READY;
                 BigButton.Enabled = true;
                 BigButton.Text = "安装失败，点击重试";
-                MessageBox.Show($"待更新的应用正在运行，请退出后重试\n{sError}", $"无法结束进程 {sError.GetType()}", MessageBoxButtons.OK);
+                MessageBox.Show($"待更新的应用正在运行，请退出后重试\n程序：{UpdateVersionInfo.Program}\n\n{sError}", $"无法结束进程 {sError.GetType()}", MessageBoxButtons.OK);
                 return;
             }
-            var iError = await InstallUpdate(UpdateVersionInfo, filepath);
+            var iError = await InstallUpdateAsync(UpdateVersionInfo, filepath);
             if (iError != null) {
                 CurrentUpdateStatus = UpdateStatus.READY;
                 BigButton.Enabled = true;
                 BigButton.Text = "安装失败，点击重试";
-                MessageBox.Show($"{iError}", $"更新包安装失败 {iError.GetType()}", MessageBoxButtons.OK);
+                MessageBox.Show($"文件：{filepath}\n\n{iError}", $"更新包安装失败 {iError.GetType()}", MessageBoxButtons.OK);
                 return;
             }
             CurrentUpdateStatus = UpdateStatus.DONE;
