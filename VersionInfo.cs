@@ -25,9 +25,6 @@ namespace SharpUpdater {
         [JsonProperty("version")]
         public string Version { get; set; }
 
-        [JsonProperty("title")]
-        public string Title { get; set; }
-
         [JsonProperty("changelog")]
         public string Changelog { get; set; }
 
@@ -43,11 +40,20 @@ namespace SharpUpdater {
         [JsonProperty("project_url")]
         public string ProjectUrl { get; set; }
 
+        [JsonProperty("download_size")]
+        public int DownloadSize { get; set; }
+
         [JsonProperty("download_url")]
         public string DownloadUrl { get; set; }
 
         public override string ToString() {
-            return JsonConvert.SerializeObject(this);
+            return JsonConvert.ToString(this);
         }
+
+        public static bool DataInValid(VersionInfo info) =>
+            info == null
+            || string.IsNullOrWhiteSpace(info.Version)
+            || string.IsNullOrWhiteSpace(info.DownloadUrl)
+            || string.IsNullOrWhiteSpace(info.Program);
     }
 }

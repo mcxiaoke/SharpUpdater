@@ -24,8 +24,8 @@
         /// </summary>
         private void InitializeComponent() {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(UpdateDialog));
-            this.UpdateButton = new System.Windows.Forms.Button();
-            this.InfoTextBox = new System.Windows.Forms.RichTextBox();
+            this.BigButton = new System.Windows.Forms.Button();
+            this.BigTextBox = new System.Windows.Forms.RichTextBox();
             this.AProgressBar = new System.Windows.Forms.ProgressBar();
             this.LoadingPic = new System.Windows.Forms.PictureBox();
             ((System.ComponentModel.ISupportInitialize)(this.LoadingPic)).BeginInit();
@@ -33,40 +33,40 @@
             // 
             // UpdateButton
             // 
-            this.UpdateButton.Enabled = false;
-            this.UpdateButton.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.UpdateButton.Location = new System.Drawing.Point(25, 432);
-            this.UpdateButton.Margin = new System.Windows.Forms.Padding(16);
-            this.UpdateButton.Name = "UpdateButton";
-            this.UpdateButton.Size = new System.Drawing.Size(724, 72);
-            this.UpdateButton.TabIndex = 0;
-            this.UpdateButton.TabStop = false;
-            this.UpdateButton.Text = "开始更新";
-            this.UpdateButton.UseVisualStyleBackColor = true;
-            this.UpdateButton.Click += new System.EventHandler(this.UpdateButton_Click);
+            this.BigButton.Enabled = false;
+            this.BigButton.Font = new System.Drawing.Font("微软雅黑", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.BigButton.Location = new System.Drawing.Point(25, 432);
+            this.BigButton.Margin = new System.Windows.Forms.Padding(16);
+            this.BigButton.Name = "UpdateButton";
+            this.BigButton.Size = new System.Drawing.Size(724, 72);
+            this.BigButton.TabIndex = 0;
+            this.BigButton.TabStop = false;
+            this.BigButton.Text = "开始更新";
+            this.BigButton.UseVisualStyleBackColor = true;
+            this.BigButton.Click += new System.EventHandler(this.UpdateButton_Click);
             // 
             // InfoTextBox
             // 
-            this.InfoTextBox.BackColor = System.Drawing.SystemColors.Control;
-            this.InfoTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.InfoTextBox.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.InfoTextBox.ForeColor = System.Drawing.SystemColors.WindowText;
-            this.InfoTextBox.Location = new System.Drawing.Point(25, 25);
-            this.InfoTextBox.Margin = new System.Windows.Forms.Padding(16);
-            this.InfoTextBox.Name = "InfoTextBox";
-            this.InfoTextBox.ReadOnly = true;
-            this.InfoTextBox.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.InfoTextBox.Size = new System.Drawing.Size(724, 329);
-            this.InfoTextBox.TabIndex = 2;
-            this.InfoTextBox.TabStop = false;
-            this.InfoTextBox.Text = "";
-            this.InfoTextBox.LinkClicked += new System.Windows.Forms.LinkClickedEventHandler(this.InfoTextBox_LinkClicked);
+            this.BigTextBox.BackColor = System.Drawing.SystemColors.Control;
+            this.BigTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.BigTextBox.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.BigTextBox.ForeColor = System.Drawing.SystemColors.WindowText;
+            this.BigTextBox.Location = new System.Drawing.Point(25, 25);
+            this.BigTextBox.Margin = new System.Windows.Forms.Padding(16);
+            this.BigTextBox.Name = "InfoTextBox";
+            this.BigTextBox.ReadOnly = true;
+            this.BigTextBox.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
+            this.BigTextBox.Size = new System.Drawing.Size(724, 345);
+            this.BigTextBox.TabIndex = 2;
+            this.BigTextBox.TabStop = false;
+            this.BigTextBox.Text = "";
+            this.BigTextBox.LinkClicked += new System.Windows.Forms.LinkClickedEventHandler(this.InfoTextBox_LinkClicked);
             // 
             // AProgressBar
             // 
-            this.AProgressBar.Location = new System.Drawing.Point(25, 373);
+            this.AProgressBar.Location = new System.Drawing.Point(25, 389);
             this.AProgressBar.Name = "AProgressBar";
-            this.AProgressBar.Size = new System.Drawing.Size(724, 40);
+            this.AProgressBar.Size = new System.Drawing.Size(724, 24);
             this.AProgressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.AProgressBar.TabIndex = 3;
             this.AProgressBar.Visible = false;
@@ -89,8 +89,8 @@
             this.ClientSize = new System.Drawing.Size(774, 529);
             this.Controls.Add(this.LoadingPic);
             this.Controls.Add(this.AProgressBar);
-            this.Controls.Add(this.InfoTextBox);
-            this.Controls.Add(this.UpdateButton);
+            this.Controls.Add(this.BigTextBox);
+            this.Controls.Add(this.BigButton);
             this.Font = new System.Drawing.Font("微软雅黑", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -110,8 +110,8 @@
 
         #endregion
 
-        private System.Windows.Forms.Button UpdateButton;
-        private System.Windows.Forms.RichTextBox InfoTextBox;
+        private System.Windows.Forms.Button BigButton;
+        private System.Windows.Forms.RichTextBox BigTextBox;
         private System.Windows.Forms.ProgressBar AProgressBar;
         private System.Windows.Forms.PictureBox LoadingPic;
     }
